@@ -118,7 +118,7 @@ void free_table(Table* table){
 }
 
 void print_prompt(){
-    printf("db> ");
+    printf("db > ");
 }
 
 /*
@@ -271,7 +271,6 @@ ExecuteResult execute_statement(Statement* statement, Table* table){
             return execute_insert(statement, table);
             break;
         case (STATEMENT_SELECT):
-            printf("Select\n");
             return execute_select(statement, table);
             break;
     }
@@ -309,7 +308,7 @@ int main(int argc, char* argv[]){
 
         switch(execute_statement(&statement, table)){
             case (EXECUTE_SUCCESS):
-                printf("Execute\n");
+                printf("Executed.\n");
                 break;
             case (EXECUTE_TABLE_FULL):
                 printf("Error: Table Full.\n");
