@@ -70,7 +70,10 @@ const u_int32_t PAGE_SIZE = 4096;
 const u_int32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 const u_int32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
-
+/*
+ * Allocates all memory need for the InputBuffer struct.
+ * Return the memory for the allocated space.
+ * */
 InputBuffer* new_input_buffer(){
     InputBuffer* input_buffer = (InputBuffer*)malloc(sizeof(InputBuffer));
     input_buffer->buffer = NULL;
@@ -80,8 +83,10 @@ InputBuffer* new_input_buffer(){
     return input_buffer;
 }
 
-// Since memory is allocated we need to free it after it has been used
-// and to avoid memory leeks
+/*
+ * It takes InputBuffer.
+ * Frees memeory allocated to InputBuffer.
+ * */
 void close_input_buffer(InputBuffer* input_buffer){
     // Need to free space for both the buffer allocated throught the get line method
     // and the struct which we allocate when we call new_input_buffer method
@@ -89,7 +94,10 @@ void close_input_buffer(InputBuffer* input_buffer){
     free(input_buffer);
 
 }
-
+/*
+ * Create a new table by allocating the porper size for a table
+ * It also initialized all the page to NULL
+ * */
 Table* new_table(){
     Table* table = malloc(sizeof(Table));
     table->num_rows = 0;
@@ -99,6 +107,9 @@ Table* new_table(){
     return table;
 }
 
+/*
+ * Accepts a table and free all memory allocated to pages as well as the table
+ * */
 void free_table(Table* table){
     for(int i= 0; table->pages[i]; i++){
         free(table->pages[i]);
@@ -110,10 +121,13 @@ void print_prompt(){
     printf("db> ");
 }
 
-// Uses getline method with InputBuffer struct to read input from command line
-// and save the input and the length
+/*
+ * Takes an InputBuffer struct and inserts the input data.
+ * Using the getline method it also save the input lenght.
+ * We need the input length since it could be less than the size of the input.
+  */
 void read_input(InputBuffer* input_buffer){
-    // While starting since buffer is Null get line will allocate the memory needed.
+    // While starting since buffer is Null getline will allocate the memory needed.
     ssize_t bytes_read =
         getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin);
     if(bytes_read <= 0){
@@ -126,19 +140,35 @@ void read_input(InputBuffer* input_buffer){
     input_buffer->buffer[bytes_read - 1] = 0;
 }
 
-
+/*
+ * It take the Row as a source and void as destination as memory.
+ * Copys the data from the row to the page memory found at the destincation memory.
+ * Basic operation is writing to file
+ * */
 void serialize_row(Row* source, void* destination){
     memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
     memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_SIZE);
     memcpy(destination + EMAIL_OFFSET, &(source->email), EMAIL_SIZE);
 }
 
+/*
+ * It take the Row as a destination and void as source as memory.
+ * Copys data from the page memory to the row to be read.
+ * Basic operation is reading from file
+ * */
 void deserialize_row(void* source, Row* destination){
     memcpy(&(destination->id), source + ID_OFFSET, ID_SIZE);
     memcpy(&(destination->username), source + USERNAME_OFFSET, USERNAME_SIZE);
     memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
+/*
+ * It takes the a Table and row_num variable.
+ * Calculates the page_num that it is going to be written on.
+ * From the caluculated page number we get the page form the table if it is not NULL otherwise
+ * we allocate memory for the pages
+ * It rerturn the memroy address of the page added witht the byte_offset to get an open slot.
+ * */
 void* row_slot(Table* table, u_int32_t row_num){
     u_int32_t page_num = row_num / ROWS_PER_PAGE;
     void* page = table->pages[page_num];
@@ -156,7 +186,9 @@ void print_row(Row* row){
     printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 }
 
-// A fuction to do meta commands passed by the user
+/*
+ * It takes an inputbuffer and does all the MetaCommands passed.
+ * */
 MetaCommandResult do_meta_command(InputBuffer* input_buffer){
     // Currently only works for '.exit' command
     if(strcmp(input_buffer->buffer, ".exit") == 0){
@@ -168,6 +200,12 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer){
 
 // Prepare the result based on the input and return an enum for prepare
 // Also sets the statement type
+/*
+ * It takes an InputBuffer and a Statement.
+ * Checks for different SQL statements and assigns the statement->type to the correct enum value.
+ * Currently we check and do the this for the user table hard coded. The select print all data.
+ * Returns an enum value with an error or success.
+ * */
 PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement){
     if(strncmp(input_buffer->buffer, "insert", 6) == 0){
         statement->type = STATEMENT_INSERT;
@@ -189,6 +227,12 @@ PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement)
     return PREPARE_UNRECOGNIZED_STATEMENT;
 }
 
+/*
+ * It takes a Statement and Table.
+ * Uses the Statement->row_to_insert data to insert data to table.
+ * Uses serialize and row_slot to insert data
+ * Returns enum value of success or error
+ * */
 ExecuteResult execute_insert(Statement* statement, Table* table){
     if (table->num_rows >= TABLE_MAX_ROWS){
         return EXECUTE_TABLE_FULL;
@@ -201,6 +245,11 @@ ExecuteResult execute_insert(Statement* statement, Table* table){
     return EXECUTE_SUCCESS;
 }
 
+/*
+ * It takes a Statement and Table.
+ * Uses deserialize_row and row_slot to print data
+ * Returns enum value of success or error
+ * */
 ExecuteResult execute_select(Statement* statement, Table* table){
     Row row;
     for(u_int32_t i = 0; i < table->num_rows; i++){
@@ -211,6 +260,11 @@ ExecuteResult execute_select(Statement* statement, Table* table){
     return EXECUTE_SUCCESS;
 }
 
+/*
+ * Takes the Statement and Table.
+ * Based on the Statement->type it will run the execute_insert or execute_select functions.
+ * Returns enum value of success or error
+ * */
 ExecuteResult execute_statement(Statement* statement, Table* table){
     switch (statement->type){
         case (STATEMENT_INSERT):
@@ -222,9 +276,6 @@ ExecuteResult execute_statement(Statement* statement, Table* table){
             break;
     }
 }
-
-// Simple fucntion to serialize and desilaze a row for out user table
-
 
 
 int main(int argc, char* argv[]){
