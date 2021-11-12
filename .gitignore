@@ -1,2 +1,8 @@
+.bundle/
+bin/
+Gemfile
+.rspec
+Gemfile.lock
 a.out
 a.exe
+
