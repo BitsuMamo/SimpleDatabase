@@ -352,13 +352,6 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table){
     }
 }
 
-
-/*
- * Takes InputBuffer and Statement.
- * Prepares an insert statments and fill the Statement->row_to_insert with proper data.
- * Check if the input data is correct.
- * Return a PrepareResult enum value.
- * */
 PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement){
     statement->type = STATEMENT_INSERT;
 
