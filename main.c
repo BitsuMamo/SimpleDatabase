@@ -139,6 +139,11 @@ Pager* pager_open(const char* filename){
     return pager;
 }
 
+/*
+ * Takes a Pager, page number, and size
+ * Check if teh page is not null and if the page memory exists
+ * After it appends the data passed to the file
+*/
 void pager_flush(Pager* pager, u_int32_t page_num, u_int32_t size){
     if (pager->pages[page_num] == NULL){
         printf("Tried to flush null page\n");
@@ -175,6 +180,11 @@ Table* db_open(const char* filename){
     return table;
 }
 
+/*
+ * Takes Table
+ * Frees the memory allocated to Table and Pager.
+ * Also saves all the data using pager_flush.
+**/
 void db_close(Table* table){
     Pager* pager = table->pager;
     u_int32_t num_full_pages = table->num_rows / ROWS_PER_PAGE;
@@ -341,6 +351,14 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table){
         return META_COMMAND_UNRECOGNIZED_COMMAND;
     }
 }
+
+
+/*
+ * Takes InputBuffer and Statement.
+ * Prepares an insert statments and fill the Statement->row_to_insert with proper data.
+ * Check if the input data is correct.
+ * Return a PrepareResult enum value.
+ * */
 PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement){
     statement->type = STATEMENT_INSERT;
 
@@ -371,8 +389,6 @@ PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement){
     return PREPARE_SUCCESS;
 }
 
-// Prepare the result based on the input and return an enum for prepare
-// Also sets the statement type
 /*
  * It takes an InputBuffer and a Statement.
  * Checks for different SQL statements and assigns the statement->type to the correct enum value.
