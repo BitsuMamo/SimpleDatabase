@@ -1,4 +1,5 @@
 // Website is https://cstack.github.io/db_tutorial/
+// TODO: Using the cursor method if nothing is on the databse reads garbage for the first item. Makes negative and long string texts fail.
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -67,6 +68,12 @@ typedef struct{
     u_int32_t num_rows;
     Pager* pager;
 } Table;
+
+typedef struct{
+    Table* table;
+    u_int32_t row_num;
+    bool end_of_table;
+} Cursor;
 
 // Constants
 const u_int32_t ID_SIZE = size_of_attribute(Row, id);
@@ -287,6 +294,11 @@ void deserialize_row(void* source, Row* destination){
     memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
+/*
+ * Takes pager and page num
+ * Checks if the page exists and grabs it. If not out of memory creates a new page.
+ * Retuns the wanted page.
+ * */
 void* get_page(Pager* pager, u_int32_t page_num){
     if (page_num > TABLE_MAX_PAGES){
         printf("Tried to fetch page number out of bounds. %d > %d\n", page_num, TABLE_MAX_PAGES);
@@ -320,20 +332,58 @@ void* get_page(Pager* pager, u_int32_t page_num){
 }
 
 /*
- * It takes the a Table and row_num variable.
- * Calculates the page_num that it is going to be written on.
- * From the caluculated page number we get the page form the table if it is not NULL otherwise
- * we allocate memory for the pages
- * It rerturn the memroy address of the page added witht the byte_offset to get an open slot.
+ * Take table
+ * Puts the cursor at the start of the table.
+ * Rerturns the Cursor
  * */
-void* row_slot(Table* table, u_int32_t row_num){
+Cursor* table_start(Table* table){
+    Cursor* cursor = malloc(sizeof(Cursor));
+    cursor->table = table;
+    cursor->row_num = 0;
+    cursor->end_of_table = false;
+
+    return cursor;
+}
+
+/*
+ * Take table
+ * Puts the cursor at the end of the table.
+ * Returns Cursor
+ * */
+Cursor* table_end(Table* table){
+    Cursor* cursor = malloc(sizeof(Cursor));
+    cursor->table = table;
+    cursor->row_num = table->num_rows;
+    cursor->end_of_table = true;
+
+    return cursor;
+}
+
+/*
+ * Takes Cursor
+ * Calculates page_num for the cursor
+ * Returns the memory of the page
+ * */
+void* cursor_value(Cursor* cursor){
+    u_int32_t row_num = cursor->row_num;
     u_int32_t page_num = row_num / ROWS_PER_PAGE;
-    void* page = get_page(table->pager, page_num);
+    void* page = get_page(cursor->table->pager, page_num);
     u_int32_t row_offset = row_num % ROWS_PER_PAGE;
     u_int32_t byte_offset = row_offset * ROW_SIZE;
+
     return page + byte_offset;
 }
 
+/*
+ * Takes a Cursor
+ * Advances the cursor to the next row and check if it is the end of table.
+ * */
+void cursor_advance(Cursor* cursor){
+    cursor->row_num += 1;
+    if (cursor->row_num >= cursor->table->num_rows){
+        cursor->end_of_table = true;
+    }
+}
 
 void print_row(Row* row){
     printf("(%d, %s, %s)\n", row->id, row->username, row->email);
@@ -419,8 +469,12 @@ ExecuteResult execute_insert(Statement* statement, Table* table){
     }
 
     Row* row_to_insert = &(statement->row_to_insert);
-    serialize_row(row_to_insert, row_slot(table, table->num_rows));
+    Cursor* cursor = table_end(table);
+
+    serialize_row(row_to_insert, cursor_value(cursor));
     table->num_rows += 1;
+
+    free(cursor);
 
     return EXECUTE_SUCCESS;
 }
@@ -431,11 +485,16 @@ ExecuteResult execute_insert(Statement* statement, Table* table){
  * Returns enum value of success or error
  * */
 ExecuteResult execute_select(Statement* statement, Table* table){
+    Cursor* cursor = table_start(table);
     Row row;
-    for(u_int32_t i = 0; i < table->num_rows; i++){
-        deserialize_row(row_slot(table, i), &row);
+
+    while (!(cursor->end_of_table)){
+        deserialize_row(cursor_value(cursor), &row);
         print_row(&row);
+        cursor_advance(cursor);
     }
+
+    free(cursor);
 
     return EXECUTE_SUCCESS;
 }
@@ -455,6 +514,7 @@ ExecuteResult execute_statement(Statement* statement, Table* table){
             break;
     }
 }
+
 
 /*
  * Main function with main loop and proper handling of returns from other functions
