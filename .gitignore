@@ -3,6 +3,7 @@ bin/
 Gemfile
 .rspec
 Gemfile.lock
+*db
 a.out
 a.exe
 

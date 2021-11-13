@@ -43,7 +43,15 @@ For the test and SQL added more enums and handled them appropirately.
 Created new function for insert statmentes. Used strok() rather than scanf() to avoid memory overflow problems. Also added one byte to strings to compenstate for the last mandatory byte.
 
 # Day 4
-## Persistens
+## Persistency.
+Implemeted saving inserted item to a file and a pager to allow cachine and reading.
+
+The table has a pager and the pager has all the pages that a database has. The pager opens a connection and read data from the file.
+The db_open() fucntions creates a pager with a filename. From the pager it calculates the number of rows saved. After it allocated memory for a Table and creates it with the number of rows.
+
+The db_close() functions saves all data to the database file and free memory allocated. Uses the pager_flush() function to save.
+
+The pager_flush() function write the data on the appropriate location.
 
 
 # Testing
