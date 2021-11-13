@@ -199,7 +199,14 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer){
     }else{
         return META_COMMAND_UNRECOGNIZED_COMMAND;
     }
+
 }
+/*
+ * Takes InputBuffer and Statement
+ * Prepares the result for an insert statement check the validity of the input
+ * Adds data to Statement->row_to_insert for processing
+ * Returns PrepareResult enum value
+ * */
 PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement){
     statement->type = STATEMENT_INSERT;
 
@@ -300,7 +307,9 @@ ExecuteResult execute_statement(Statement* statement, Table* table){
     }
 }
 
-
+/*
+ * Main function with main loop and proper handling of returns from other functions
+ * */
 int main(int argc, char* argv[]){
     Table* table = new_table();
     InputBuffer* input_buffer = new_input_buffer();
