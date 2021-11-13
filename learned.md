@@ -53,6 +53,9 @@ The db_close() functions saves all data to the database file and free memory all
 
 The pager_flush() function write the data on the appropriate location.
 
+Implemeted cursors. They track when our rows are. Aslo replaced row_slot() function with cursor value. It makes everything accesible by cursors.
+Integrated the execute functions with cursors.
+
 
 # Testing
 
