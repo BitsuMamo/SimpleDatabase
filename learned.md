@@ -56,6 +56,19 @@ The pager_flush() function write the data on the appropriate location.
 Implemeted cursors. They track when our rows are. Aslo replaced row_slot() function with cursor value. It makes everything accesible by cursors.
 Integrated the execute functions with cursors.
 
+# Day 5
+Implemeted a basic BTree.
+Created constants for a common node and a leaf node.
+
+Implelemted leaf_node_insert() method to insert a key and row at a given cursor location.
+Reimplemented all cursor functions to work with node instead of arrays.
+
+##Node functions
+1. leaf_node_num_cells -> gets the number of cells found in a leaf node.
+2. leaf_node_cell -> get the memory location of the a certain leaf node cell.
+3. leaf_node_key -> get the key of the a certain leaf node.
+4. leaf_node_value -> get memory location fo the value for a certain leaf node.
+5. initialize_leaf_node -> Initializes a node to 0 Cells.
 
 # Testing
 
@@ -67,3 +80,34 @@ Integrated the execute functions with cursors.
 1. SQL and how it works in the back
 2. C programming language
 3. Unit Testing
+
+# B-Trees
+The B-Tree is a data structure that SQLite uses.
+##Why a B-Tree?
+1. Fast searching. Logrithmic.
+2. Fast Insert/Delete. Constant
+3. Fast range traversal.
+
+### A B-Tree is different from a binary tree. The B stands for balanced.
+Unlike a binary tree a B-Tree can have more than two children. Each node can have m children. m is called the trees order.
+To keep it balanced we say nodes need to have at least m/2 children(rounded up).
+
+### Exceptions
+1. If leaf nodes have 0 children,
+2. The root node can have fewer than m children, but has to have at least 2.
+3. If the root node the only node( The root is the leaf node ), it still has 0 children.
+
+## Variations
+The B-Tree explained above is used to store indexes. For tables there is a Variations called a B+Tree.
+
+## B+Tree
+Nodes with children are called internal nodes.
+
+|Order m Tree|Internal Node|Leaf Node|
+|------------|-------------|---------|
+|Stores      |key and pointer to children|keys and values|
+|Number of keys|up to m-1  |as many available|
+|Number of pointers|number of keys+1|none|
+|Number of values|none     |number of keys|
+|key purpose|Routing       |paird with value|
+|Stores Values|No          |Yes|
