@@ -70,6 +70,17 @@ Reimplemented all cursor functions to work with node instead of arrays.
 4. leaf_node_value -> get memory location fo the value for a certain leaf node.
 5. initialize_leaf_node -> Initializes a node to 0 Cells.
 
+# Day 6
+Implemeted duplicate key checking and searching.
+Errors: Every new data after two become null with only the primary key exisiting. Might be tutorial problem.
+
+table_find() function takes the table and key and gets a leaf node or an internal node(to be implemented)
+leaf_node_find() function takes the table, page number and primary key and implemets a binary search to find where the key should be placed inside the tree. Return a position of a key, a postion we'll need to move or postion past the key.
+get_node_type() return the node type of a certain node.
+set_node_type() sets the node type of a certain node.
+Using these during initialize_leaf_node we set the node type to leaf node.
+
+
 # Testing
 
 ## I have learned the bare minimun rspec that has been used in this tutorial.
@@ -84,8 +95,7 @@ Reimplemented all cursor functions to work with node instead of arrays.
 # B-Trees
 The B-Tree is a data structure that SQLite uses.
 ##Why a B-Tree?
-1. Fast searching. Logrithmic.
-2. Fast Insert/Delete. Constant
+1. Fast searching. Logrithmic.2. Fast Insert/Delete. Constant
 3. Fast range traversal.
 
 ### A B-Tree is different from a binary tree. The B stands for balanced.
