@@ -72,13 +72,22 @@ Reimplemented all cursor functions to work with node instead of arrays.
 
 # Day 6
 Implemeted duplicate key checking and searching.
-Errors: Every new data after two become null with only the primary key exisiting. Might be tutorial problem.
+Error 1: Every new data after two become null with only the primary key exisiting. Might be tutorial problem.
 
 table_find() function takes the table and key and gets a leaf node or an internal node(to be implemented)
 leaf_node_find() function takes the table, page number and primary key and implemets a binary search to find where the key should be placed inside the tree. Return a position of a key, a postion we'll need to move or postion past the key.
 get_node_type() return the node type of a certain node.
 set_node_type() sets the node type of a certain node.
 Using these during initialize_leaf_node we set the node type to leaf node.
+
+# Day 7
+Implementation of leaf node splitting.
+Fix: For day six Error 1. Problem with was a constant that held wrong information.
+
+When leaf node is full we need to split the exiting data including the new data into two. The keys found on the upper half are strictly greater than the lower half. A new leaf node is created and the upper half is allocated into it.
+We get the old node and create a new node. The data is split into the two nodes using their keys. Upper half is moved into the right child(leaf node).
+
+An internal node is defined with new constants. They have on emore child pointer than keys. The maximun node is always the right key.
 
 
 # Testing

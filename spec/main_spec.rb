@@ -18,53 +18,36 @@ describe 'database' do
     raw_output.split("\n")
   end
 
-  it 'keeps data after closing connection' do
-    result1 = run_script([
+  it 'inserts and retreives a row' do
+    result = run_script([
       "insert 1 user1 person1@example.com",
-      ".exit",
-    ])
-
-    expect(result1).to match_array([
-      "db > Executed.",
-      "db > ",
-    ])
-
-
-    result2 = run_script([
       "select",
       ".exit",
     ])
-
-    expect(result2).to match_array([
+    expect(result).to eq([
+      "db > Executed.",
       "db > (1, user1, person1@example.com)",
       "Executed.",
       "db > ",
     ])
   end
 
-  it 'inserts and retrieves a row' do
-    result = run_script([
+  it 'keeps data after closing connection' do
+    result1 = run_script([
       "insert 1 user1 person1@example.com",
-      "insert 2 user1 person1@example.com",
-      "insert 3 user1 person1@example.com",
-      "insert 4 user1 person1@example.com",
-      "insert 5 user1 person1@example.com",
-      "insert 6 user1 person1@example.com",
-      "insert 7 user1 person1@example.com",
-      "insert 8 user1 person1@example.com",
+      ".exit",
+    ])
+    expect(result1).to eq([
+      "db > Executed.",
+      "db > ",
+    ])
+
+    result2 = run_script([
       "select",
       ".exit",
     ])
-    expect(result).to match_array([
-      "db > Executed.",
+    expect(result2).to eq([
       "db > (1, user1, person1@example.com)",
-      "db > (2, user1, person1@example.com)",
-      "db > (3, user1, person1@example.com)",
-      "db > (4, user1, person1@example.com)",
-      "db > (5, user1, person1@example.com)",
-      "db > (6, user1, person1@example.com)",
-      "db > (7, user1, person1@example.com)",
-      "db > (8, user1, person1@example.com)",
       "Executed.",
       "db > ",
     ])
@@ -76,10 +59,10 @@ describe 'database' do
     end
     script << ".exit"
     result = run_script(script)
-    expect(result[-2]).to eq('db > Error: Table Full.')
+    expect(result[-2]).to eq('db > Error: Table full.')
   end
 
-  it 'allows inserting strings that are the maximun length' do
+  it 'allows inserting strings that are the maximum length' do
     long_username = "a"*32
     long_email = "a"*255
     script = [
@@ -88,7 +71,7 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to match_array([
+    expect(result).to eq([
       "db > Executed.",
       "db > (1, #{long_username}, #{long_email})",
       "Executed.",
@@ -105,13 +88,12 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to match_array([
+    expect(result).to eq([
       "db > String is too long.",
       "db > Executed.",
       "db > ",
     ])
   end
-
 
   it 'prints an error message if id is negative' do
     script = [
@@ -120,28 +102,26 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to match_array([
+    expect(result).to eq([
       "db > ID must be positive.",
       "db > Executed.",
-      "db > "
+      "db > ",
     ])
   end
 
-  it 'prints constants' do
+  it 'prints an error message if there is a duplicate id' do
     script = [
-      ".constants",
+      "insert 1 user1 person1@example.com",
+      "insert 1 user1 person1@example.com",
+      "select",
       ".exit",
     ]
     result = run_script(script)
-
-    expect(result).to match_array([
-      "db > Constants:",
-      "ROW_SIZE: 293",
-      "COMMON_NODE_HEADER_SIZE: 6",
-      "LEAF_NODE_HEADER_SIZE: 10",
-      "LEAF_NODE_CELL_SIZE: 297",
-      "LEAF_NODE_SPACE_FOR_CELLS: 4086",
-      "LEAF_NODE_MAX_CELLS: 13",
+    expect(result).to eq([
+      "db > Executed.",
+      "db > Error: Duplicate key.",
+      "db > (1, user1, person1@example.com)",
+      "Executed.",
       "db > ",
     ])
   end
@@ -154,16 +134,16 @@ describe 'database' do
     script << ".exit"
     result = run_script(script)
 
-  expect(result).to match_array([
-    "db > Executed.",
-    "db > Executed.",
-    "db > Executed.",
-    "db > Tree:",
-    "- leaf (size 3)",
-    "  - 1",
-    "  - 2",
-    "  - 3",
-    "db > "
+    expect(result).to eq([
+      "db > Executed.",
+      "db > Executed.",
+      "db > Executed.",
+      "db > Tree:",
+      "- leaf (size 3)",
+      "  - 1",
+      "  - 2",
+      "  - 3",
+      "db > "
     ])
   end
 
@@ -176,45 +156,46 @@ describe 'database' do
     script << ".exit"
     result = run_script(script)
 
-    expect(result[14...(result.length)]).to match_array([
+    expect(result[14...(result.length)]).to eq([
       "db > Tree:",
       "- internal (size 1)",
       "  - leaf (size 7)",
-      "  - 1",
-      "  - 2",
-      "  - 3",
-      "  - 4",
-      "  - 5",
-      "  - 6",
-      "  - 7",
+      "    - 1",
+      "    - 2",
+      "    - 3",
+      "    - 4",
+      "    - 5",
+      "    - 6",
+      "    - 7",
       "  - key 7",
       "  - leaf (size 7)",
-      "  - 8",
-      "  - 9",
-      "  - 10",
-      "  - 11",
-      "  - 12",
-      "  - 13",
-      "  - 14",
+      "    - 8",
+      "    - 9",
+      "    - 10",
+      "    - 11",
+      "    - 12",
+      "    - 13",
+      "    - 14",
       "db > Need to implement searching an internal node",
     ])
   end
 
-  it 'prints an error message if there is a duplicate id' do
+  it 'prints constants' do
     script = [
-      "insert 1 user1 person1@example.com",
-      "insert 1 user1 person1@example.com",
-      "select",
+      ".constants",
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to match_array([
-      "db > Executed.",
-      "db > Error: Duplicate key.",
-      "db > (1, user1, person1@example.com)",
-      "Executed.",
+
+    expect(result).to eq([
+      "db > Constants:",
+      "ROW_SIZE: 293",
+      "COMMON_NODE_HEADER_SIZE: 6",
+      "LEAF_NODE_HEADER_SIZE: 10",
+      "LEAF_NODE_CELL_SIZE: 297",
+      "LEAF_NODE_SPACE_FOR_CELLS: 4086",
+      "LEAF_NODE_MAX_CELLS: 13",
       "db > ",
     ])
   end
 end
-
