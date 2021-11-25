@@ -1,6 +1,4 @@
 // Website is https://cstack.github.io/db_tutorial/
-// TODO: Using the cursor method if nothing is on the databse reads garbage for
-// the first item. Makes negative and long string texts fail.
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -152,6 +150,7 @@ const uint32_t INTERNAL_NODE_CELL_SIZE =
 Cursor *leaf_node_find(Table *, uint32_t, uint32_t);
 Cursor *table_find(Table *, uint32_t);
 Cursor *table_start(Table *);
+Cursor *internal_node_find(Table*, uint32_t, uint32_t);
 ExecuteResult execute_insert(Statement *, Table *);
 ExecuteResult execute_select(Statement *, Table *);
 ExecuteResult execute_statement(Statement *, Table *);
@@ -212,34 +211,34 @@ void print_row(Row *row) {
   printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 }
 
-void print_tree(Pager* pager, uint32_t page_num, uint32_t indentation_level) {
-  void* node = get_page(pager, page_num);
+void print_tree(Pager *pager, uint32_t page_num, uint32_t indentation_level) {
+  void *node = get_page(pager, page_num);
   uint32_t num_keys, child;
 
   switch (get_node_type(node)) {
-    case (NODE_LEAF):
-      num_keys = *leaf_node_num_cells(node);
-      indent(indentation_level);
-      printf("- leaf (size %d)\n", num_keys);
-      for (uint32_t i = 0; i < num_keys; i++) {
-        indent(indentation_level + 1);
-        printf("- %d\n", *leaf_node_key(node, i));
-      }
-      break;
-    case (NODE_INTERNAL):
-      num_keys = *internal_node_num_keys(node);
-      indent(indentation_level);
-      printf("- internal (size %d)\n", num_keys);
-      for (uint32_t i = 0; i < num_keys; i++) {
-        child = *internal_node_child(node, i);
-        print_tree(pager, child, indentation_level + 1);
-
-        indent(indentation_level + 1);
-        printf("- key %d\n", *internal_node_key(node, i));
-      }
-      child = *internal_node_right_child(node);
+  case (NODE_LEAF):
+    num_keys = *leaf_node_num_cells(node);
+    indent(indentation_level);
+    printf("- leaf (size %d)\n", num_keys);
+    for (uint32_t i = 0; i < num_keys; i++) {
+      indent(indentation_level + 1);
+      printf("- %d\n", *leaf_node_key(node, i));
+    }
+    break;
+  case (NODE_INTERNAL):
+    num_keys = *internal_node_num_keys(node);
+    indent(indentation_level);
+    printf("- internal (size %d)\n", num_keys);
+    for (uint32_t i = 0; i < num_keys; i++) {
+      child = *internal_node_child(node, i);
       print_tree(pager, child, indentation_level + 1);
-      break;
+
+      indent(indentation_level + 1);
+      printf("- key %d\n", *internal_node_key(node, i));
+    }
+    child = *internal_node_right_child(node);
+    print_tree(pager, child, indentation_level + 1);
+    break;
   }
 }
 
@@ -452,6 +451,34 @@ void initialize_internal_node(void *node) {
   *internal_node_num_keys(node) = 0;
 }
 
+Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key){
+    void* node = get_page(table->pager, page_num);
+    uint32_t num_keys = *internal_node_num_keys(node);
+
+    uint32_t min_index = 0;
+    uint32_t max_index = num_keys;
+
+    while(min_index != max_index){
+        uint32_t index = (min_index + max_index) / 2;
+        uint32_t key_to_right = *internal_node_key(node, index);
+
+        if (key_to_right >= key){
+            max_index = index;
+        }else{
+            min_index = index + 1;
+        }
+    }
+
+    uint32_t child_num = *internal_node_child(node, min_index);
+    void* child = get_page(table->pager, child_num);
+    switch(get_node_type(child)){
+        case NODE_LEAF:
+            return leaf_node_find(table, child_num, key);
+        case NODE_INTERNAL:
+            return internal_node_find(table, child_num, key);
+    }
+}
+
 uint32_t get_node_max_key(void *node) {
   switch (get_node_type(node)) {
   case NODE_INTERNAL:
@@ -492,7 +519,6 @@ void create_new_root(Table *table, uint32_t right_child_page_num) {
   *internal_node_key(root, 0) = left_child_max_key;
   *internal_node_right_child(root) = right_child_page_num;
 }
-
 
 /*
  * It take the Row as a source and void as destination as memory.
@@ -771,8 +797,7 @@ Cursor *table_find(Table *table, uint32_t key) {
   if (get_node_type(root_node) == NODE_LEAF) {
     return leaf_node_find(table, root_page_num, key);
   } else {
-    printf("Need to implement searching an internal node\n");
-    exit(EXIT_FAILURE);
+    return internal_node_find(table, root_page_num, key);
   }
 }
 
